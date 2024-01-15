@@ -34,6 +34,8 @@ class Grade(TypedDict):
         sem (int): The semester.
         subject_id (int): The subject's ID.
         messaged (bool): Whether the student has been messaged.
+        created_at (int): The time the grade was created.
+        updated_at (int): The time the grade was updated.
     """
     grade_id: int
     student_id: str
@@ -43,6 +45,8 @@ class Grade(TypedDict):
     sem: int
     subject_id: int
     messaged: bool
+    created_at: int
+    updated_at: int
 
 class LoginInfo(TypedDict):
     """Login info data type.
