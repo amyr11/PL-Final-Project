@@ -97,5 +97,49 @@ class Database:
         """
         self.client.table('grades').insert(data).execute()
 
+    def get_login_info(self, username: str) -> LoginInfo:
+        """Get a login's data from the database.
+
+        Args:
+            username (str): The login's username.
+
+        Returns:
+            LoginInfo: The login's data.
+        """
+        return self.client.table('login').select('*').eq('username', username).execute().data[0]
+    
+    def delete_login_info(self, username: str) -> None:
+        """Delete a login's data from the database.
+        
+        Args:
+            username (str): The login's username.
+
+        Returns:
+            None
+        """
+        self.client.table('login').delete().eq('username', username).execute()
+
+    def update_login_info(self, username: str, data: LoginInfo) -> LoginInfo:
+        """Update a login's data in the database.
+        
+        Args:
+            username (str): The login's username.
+            data (LoginInfo): The login's data to update.
+
+        Returns:
+            LoginInfo: The login's updated data.
+        """
+        self.client.table('login').update(data).eq('username', username).execute()
+
+    def insert_login_info(self, data: LoginInfo) -> LoginInfo:
+        """Insert a login's data into the database.
+
+        Args:
+            data (LoginInfo): The login's data to insert.
+
+        Returns:
+            LoginInfo: The login's inserted data.
+        """
+        self.client.table('login').insert(data).execute()
     def get_client(self) -> Client:
         return self.client
