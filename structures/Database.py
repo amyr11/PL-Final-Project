@@ -193,5 +193,19 @@ class Database:
             StudentRequest: The student request's inserted data.
         """
         self.client.table('student_requests').insert(data).execute()
+
+    def get_all(self, table: str) -> list:
+        """Get all data from a table.
+
+        Args:
+            table (str): The table to get data from.
+        
+        Returns:
+            list: A list of data from the table.
+        """
+        if table not in valid_tables:
+            raise Exception(f"Invalid table: {table}. Valid tables are: {valid_tables}")
+        return self.client.table(table).select('*').execute().data
+
     def get_client(self) -> Client:
         return self.client
