@@ -21,3 +21,26 @@ class Student(TypedDict):
     year_level: int
     email: str
     contact_number: str
+
+class Grade(TypedDict):
+    """Grade data type.
+
+    Attributes:
+        grade_id (int): The grade's ID.
+        student_id (str): The student's ID.
+        grade (float): The grade.
+        remark_id (int): The remark's ID.
+        year (int): The school year.
+        sem (int): The semester.
+        subject_id (int): The subject's ID.
+        messaged (bool): Whether the student has been messaged.
+    """
+    grade_id: int
+    student_id: str
+    grade: float
+    remark_id: int
+    year: int
+    sem: int
+    subject_id: int
+    messaged: bool
+
