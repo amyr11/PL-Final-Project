@@ -53,7 +53,7 @@ class Database:
         """
         self.client.table('student_info').insert(data).execute()
 
-    def get_grade(self, grade_id: int):
+    def get_grade(self, grade_id: int): # NOTE - Should it return just one grade, all grades of a student via student_id, or a separate function for that?
         """Get a grade's data from the database.
 
         Args:
