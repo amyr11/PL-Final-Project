@@ -80,3 +80,14 @@ class StudentRequest(TypedDict):
     student_request_status_id: int
     created_at: str
     updated_at: str
+
+valid_tables = [
+    "document_type",
+    "grades",
+    "login",
+    "remarks",
+    "request_statuses",
+    "student_info",
+    "student_requests",
+    "subjects"
+]
