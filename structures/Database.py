@@ -1,5 +1,6 @@
 from supabase import create_client, Client
 from common.types import *
+from datetime import datetime
 
 class Database:
     def __init__(self, url: str, key: str) -> None:
@@ -75,6 +76,7 @@ class Database:
         self.client.table('grades').delete().eq('grade', grade_id).execute()
 
     def update_grade(self, grade_id: int, data: Grade) -> Grade:
+        now = datetime.now().timestamp()
         """Update a grade's data in the database.
         
         Args:
@@ -84,6 +86,7 @@ class Database:
         Returns:
             Grade: The grade's updated data.
         """
+        data["updated_at"] = str(datetime.fromtimestamp(now))
         self.client.table('grades').update(data).eq('grade', grade_id).execute()
 
     def insert_grade(self, data: Grade) -> Grade:
@@ -120,6 +123,7 @@ class Database:
         self.client.table('login').delete().eq('username', username).execute()
 
     def update_login_info(self, username: str, data: LoginInfo) -> LoginInfo:
+        now = datetime.now().timestamp()
         """Update a login's data in the database.
         
         Args:
@@ -129,6 +133,7 @@ class Database:
         Returns:
             LoginInfo: The login's updated data.
         """
+        data["updated_at"] = str(datetime.fromtimestamp(now))
         self.client.table('login').update(data).eq('username', username).execute()
 
     def insert_login_info(self, data: LoginInfo) -> LoginInfo:
@@ -165,6 +170,7 @@ class Database:
         self.client.table('student_requests').delete().eq('id', id).execute()
 
     def update_student_request(self, id: int, data: StudentRequest) -> StudentRequest:
+        now = datetime.now().timestamp()
         """Update a student request's data in the database.
         
         Args:
@@ -174,6 +180,7 @@ class Database:
         Returns:
             StudentRequest: The student request's updated data.
         """
+        data["updated_at"] = str(datetime.fromtimestamp(now))
         self.client.table('student_requests').update(data).eq('id', id).execute()
 
     def insert_student_request(self, data: StudentRequest) -> StudentRequest:
