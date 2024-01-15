@@ -65,3 +65,18 @@ class LoginInfo(TypedDict):
     first_name: str
     middle_name: str
     last_name: str
+
+class StudentInfo(TypedDict):
+    id: int
+    student_id: str
+    mode: str
+    document_type_id: int
+    request_amount: int
+    purpose: str
+    total: float
+    receipt_number: str
+    request_date: int
+    receive_date: int
+    student_request_status_id: int
+    created_at: int
+    updated_at: int
