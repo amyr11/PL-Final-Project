@@ -141,5 +141,50 @@ class Database:
             LoginInfo: The login's inserted data.
         """
         self.client.table('login').insert(data).execute()
+
+    def get_student_request(self, id: int) -> StudentRequest:
+        """Get a student request's data from the database.
+
+        Args:
+            id (int): The student request's ID.
+
+        Returns:
+            StudentRequest: The student request's data.
+        """
+        return self.client.table('student_requests').select('*').eq('id', id).execute().data[0]
+    
+    def delete_student_request(self, id: int) -> None:
+        """Delete a student request's data from the database.
+        
+        Args:
+            id (int): The student request's ID.
+
+        Returns:
+            None
+        """
+        self.client.table('student_requests').delete().eq('id', id).execute()
+
+    def update_student_request(self, id: int, data: StudentRequest) -> StudentRequest:
+        """Update a student request's data in the database.
+        
+        Args:
+            id (int): The student request's ID.
+            data (StudentRequest): The student request's data to update.
+
+        Returns:
+            StudentRequest: The student request's updated data.
+        """
+        self.client.table('student_requests').update(data).eq('id', id).execute()
+
+    def insert_student_request(self, data: StudentRequest) -> StudentRequest:
+        """Insert a student request's data into the database.
+
+        Args:
+            data (StudentRequest): The student request's data to insert.
+
+        Returns:
+            StudentRequest: The student request's inserted data.
+        """
+        self.client.table('student_requests').insert(data).execute()
     def get_client(self) -> Client:
         return self.client
