@@ -45,8 +45,8 @@ class Grade(TypedDict):
     sem: int
     subject_id: int
     messaged: bool
-    created_at: int
-    updated_at: int
+    created_at: str
+    updated_at: str
 
 class LoginInfo(TypedDict):
     """Login info data type.
@@ -78,5 +78,5 @@ class StudentRequest(TypedDict):
     request_date: int
     receive_date: int
     student_request_status_id: int
-    created_at: int
-    updated_at: int
+    created_at: str
+    updated_at: str
