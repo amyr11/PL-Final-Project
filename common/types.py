@@ -44,3 +44,20 @@ class Grade(TypedDict):
     subject_id: int
     messaged: bool
 
+class LoginInfo(TypedDict):
+    """Login info data type.
+
+    Attributes:
+        username (str): The username.
+        employee_number (int): The employee number.
+        hash (str): The password hash.
+        first_name (str): The first name.
+        middle_name (str): The middle name.
+        last_name (str): The last name.
+    """
+    username: str
+    employee_number: int
+    hash: str
+    first_name: str
+    middle_name: str
+    last_name: str
