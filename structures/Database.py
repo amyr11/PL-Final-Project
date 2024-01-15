@@ -52,7 +52,7 @@ class Database:
         """
         self.client.table('student_info').insert(data).execute()
 
-    def get_grade(self, grade: int):
+    def get_grade(self, grade_id: int):
         """Get a grade's data from the database.
 
         Args:
@@ -61,9 +61,9 @@ class Database:
         Returns:
             Grade: The grade's data.
         """
-        return self.client.table('grades').select('*').eq('grade', grade).execute().data[0]
+        return self.client.table('grades').select('*').eq('grade', grade_id).execute().data[0]
     
-    def delete_grade(self, grade: int) -> None:
+    def delete_grade(self, grade_id: int) -> None:
         """Delete a grade's data from the database.
         
         Args:
@@ -72,9 +72,9 @@ class Database:
         Returns:
             None
         """
-        self.client.table('grades').delete().eq('grade', grade).execute()
+        self.client.table('grades').delete().eq('grade', grade_id).execute()
 
-    def update_grade(self, grade: int, data: Grade) -> Grade:
+    def update_grade(self, grade_id: int, data: Grade) -> Grade:
         """Update a grade's data in the database.
         
         Args:
@@ -84,7 +84,7 @@ class Database:
         Returns:
             Grade: The grade's updated data.
         """
-        self.client.table('grades').update(data).eq('grade', grade).execute()
+        self.client.table('grades').update(data).eq('grade', grade_id).execute()
 
     def insert_grade(self, data: Grade) -> Grade:
         """Insert a grade's data into the database.
