@@ -66,7 +66,7 @@ class LoginInfo(TypedDict):
     middle_name: str
     last_name: str
 
-class StudentInfo(TypedDict):
+class StudentRequest(TypedDict):
     id: int
     student_id: str
     mode: str
