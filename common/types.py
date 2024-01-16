@@ -8,7 +8,7 @@ class Student(TypedDict):
         first_name (str): The student's first name.
         middle_name (str): The student's middle name.
         last_name (str): The student's last name.
-        course (str): The student's course.
+        course_id (int): The student's course.
         year_level (int): The student's year level.
         email (str): The student's email.
         contact_number (str): The student's contact number.
@@ -17,7 +17,7 @@ class Student(TypedDict):
     first_name: str
     middle_name: str
     last_name: str
-    course: str
+    course_id: int
     year_level: int
     email: str
     contact_number: str
@@ -89,5 +89,6 @@ valid_tables = [
     "request_statuses",
     "student_info",
     "student_requests",
-    "subjects"
+    "subjects",
+    "courses",
 ]
