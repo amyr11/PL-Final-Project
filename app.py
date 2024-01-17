@@ -153,7 +153,7 @@ class StudentsTab(ctk.CTkFrame):
         self.search_button = ctk.CTkButton(
             self.search_frame,
             text="🔍 Search", 
-            command=self.get_selected_students, 
+            command=self.search, 
             width=40
         )
         self.reset_button = ctk.CTkButton(
@@ -165,6 +165,14 @@ class StudentsTab(ctk.CTkFrame):
         )
 
         self.buttons_frame = ctk.CTkFrame(self)
+        self.import_excel_button = ctk.CTkButton(
+            self.buttons_frame,
+            text="📄 Import from Excel",
+            command=self.import_excel_cmd,
+            width=20,
+            fg_color="green",
+            hover_color="darkgreen",
+        )
         self.delete_student_button = ctk.CTkButton(
             self.buttons_frame,
             text="🗑 Delete Student",
@@ -192,9 +200,10 @@ class StudentsTab(ctk.CTkFrame):
         self.search_bar.grid(row=0, column=0, sticky="w")
         self.search_button.grid(row=0, column=1, sticky="w", padx=(10, 0))
         self.reset_button.grid(row=0, column=2, sticky="w", padx=(10, 0))
-        self.delete_student_button.grid(row=0, column=0, sticky="e", padx=(10, 0))
-        self.edit_student_button.grid(row=0, column=1, sticky="e", padx=(10, 0))
-        self.add_student_button.grid(row=0, column=2, sticky="e", padx=(10, 0))
+        self.import_excel_button.grid(row=0, column=0, sticky="e", padx=(10, 0))
+        self.delete_student_button.grid(row=0, column=1, sticky="e", padx=(10, 0))
+        self.edit_student_button.grid(row=0, column=2, sticky="e", padx=(10, 0))
+        self.add_student_button.grid(row=0, column=3, sticky="e", padx=(10, 0))
         self.students_table.grid(
             row=1, column=0, sticky="nsew", padx=10, pady=10, columnspan=2
         )
@@ -309,6 +318,61 @@ class StudentsTab(ctk.CTkFrame):
     def add_student_cmd(self):
         add_student_window = AddStudentWindow(self)
         add_student_window.grab_set()
+    
+    def import_excel_cmd(self):
+        # open file dialog
+        from tkinter import filedialog
+        import pandas as pd
+
+        # Only allow excel files
+        file_path = filedialog.askopenfilename(
+            filetypes=[("Excel files", "*.xlsx")]
+        )
+
+        if file_path == "":
+            return
+        
+        # Read the excel file
+        df = pd.read_excel(file_path)
+
+        # Validate the data
+        if not (
+            "student_id" in df.columns
+            and "first_name" in df.columns
+            and "last_name" in df.columns
+            and "year_level" in df.columns
+            and "email" in df.columns
+            and "contact_number" in df.columns
+            and "course_code" in df.columns
+        ):
+            messagebox.showwarning(
+                "Invalid Excel File",
+                "The excel file you selected is invalid.",
+            )
+            return
+        
+        # Convert the dataframe to a list of dictionaries
+        students = df.to_dict("records")
+
+        # Insert the students into the database
+        db = Database()
+        skipped = 0
+        for student in students:
+            # Check if the student already exists
+            if db.get_student(student["student_id"]) is not None:
+                skipped += 1
+                continue
+
+            db.insert_student(student)
+        
+        self.populate_students_table()
+
+        # Show a message box with the number of students imported
+        messagebox.showinfo(
+            "Import Successful",
+            f"Successfully imported {len(students) - skipped} students. {skipped} students were skipped because they already exist in the database.",
+        )
+
 
 
 class AddStudentWindow(ctk.CTkToplevel):
