@@ -2,6 +2,7 @@ from supabase import create_client, Client
 from .tables import *
 from datetime import datetime
 import os
+import hashlib
 
 url = os.environ.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_API_KEY")
@@ -264,6 +265,28 @@ class Database:
         if table not in valid_tables:
             raise Exception(f"Invalid table: {table}. Valid tables are: {valid_tables}")
         return self.client.table(table).select("*").execute().data
+
+    def verify_login(self, employee_number: str, password: str) -> bool:
+        """Verify the login credentials against the database.
+
+        Args:
+            employee_number (str): The employee number.
+            password (str): The password.
+
+        Returns:
+            bool: True if the credentials are valid, False otherwise.
+        """
+
+        md5_password = hashlib.md5(password.encode()).hexdigest()
+
+        return (
+            self.client.table("login")
+            .select("*")
+            .eq("employee_number", employee_number)
+            .eq("hash", md5_password)
+            .execute()
+            .data
+        )
 
     def get_client(self) -> Client:
         return self.client
