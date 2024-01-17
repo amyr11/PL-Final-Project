@@ -1,5 +1,5 @@
 from supabase import create_client, Client
-from tables import *
+from .tables import *
 from datetime import datetime
 import os
 
@@ -127,11 +127,11 @@ class Database:
         """
         self.client.table("grades").insert(data).execute()
 
-    def get_login_info(self, username: str) -> LoginInfo:
+    def get_login_info(self, employee_number: str) -> LoginInfo:
         """Get a login's data from the database.
 
         Args:
-            username (str): The login's username.
+            employee_number (str): The login's employee_number.
 
         Returns:
             LoginInfo: The login's data.
@@ -139,35 +139,37 @@ class Database:
         return (
             self.client.table("login")
             .select("*")
-            .eq("username", username)
+            .eq("employee_number", employee_number)
             .execute()
             .data[0]
         )
 
-    def delete_login_info(self, username: str) -> None:
+    def delete_login_info(self, employee_number: str) -> None:
         """Delete a login's data from the database.
 
         Args:
-            username (str): The login's username.
+            employee_number (str): The login's employee_number.
 
         Returns:
             None
         """
-        self.client.table("login").delete().eq("username", username).execute()
+        self.client.table("login").delete().eq(
+            "employee_number", employee_number
+        ).execute()
 
-    def update_login_info(self, username: str, data: LoginInfo) -> LoginInfo:
-        now = datetime.now().timestamp()
+    def update_login_info(self, employee_number: str, data: LoginInfo) -> LoginInfo:
         """Update a login's data in the database.
-        
+
         Args:
-            username (str): The login's username.
+            employee_number (str): The login's employee_number.
             data (LoginInfo): The login's data to update.
 
         Returns:
             LoginInfo: The login's updated data.
         """
-        data["updated_at"] = str(datetime.fromtimestamp(now))
-        self.client.table("login").update(data).eq("username", username).execute()
+        self.client.table("login").update(data).eq(
+            "employee_number", employee_number
+        ).execute()
 
     def insert_login_info(self, data: LoginInfo) -> LoginInfo:
         """Insert a login's data into the database.

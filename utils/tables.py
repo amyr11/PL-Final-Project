@@ -65,8 +65,7 @@ class LoginInfo(TypedDict):
         last_name (str): The last name.
     """
 
-    username: str
-    employee_number: int
+    employee_number: str
     hash: str
     first_name: str
     middle_name: str
