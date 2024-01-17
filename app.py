@@ -1,32 +1,32 @@
 import tkinter.messagebox as messagebox
 from utils.database import Database
-from customtkinter import CTk, CTkEntry, CTkButton, CTkLabel, CTkFrame
+import customtkinter as ctk
 
 
-class Login(CTk):
+class Login(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Login")
         self.grid_columnconfigure(0, weight=1)
 
         # Form widgets
-        self.title_frame = CTkFrame(self)
-        self.title_label = CTkLabel(
+        self.title_frame = ctk.CTkFrame(self)
+        self.title_label = ctk.CTkLabel(
             self.title_frame, text="Office of the University Registrar", font=("", 24)
         )
         self.title_label.pack(padx=40, pady=(10, 0))
-        self.subtitle_label = CTkLabel(
+        self.subtitle_label = ctk.CTkLabel(
             self.title_frame, text="Inquiry System", font=("", 16)
         )
         self.subtitle_label.pack(padx=20, pady=(0, 20))
 
-        self.employee_number_label = CTkLabel(self, text="Employee Number")
-        self.employee_number_entry = CTkEntry(self)
+        self.employee_number_label = ctk.CTkLabel(self, text="Employee Number")
+        self.employee_number_entry = ctk.CTkEntry(self)
 
-        self.password_label = CTkLabel(self, text="Password")
-        self.password_entry = CTkEntry(self, show="*")
+        self.password_label = ctk.CTkLabel(self, text="Password")
+        self.password_entry = ctk.CTkEntry(self, show="*")
 
-        self.login_button = CTkButton(self, text="Login", command=self.login)
+        self.login_button = ctk.CTkButton(self, text="Login", command=self.login)
 
         # Grid layout
         self.title_frame.grid(row=0, column=0, columnspan=2, sticky="ew")
@@ -64,7 +64,7 @@ class Login(CTk):
         db = Database()
         if db.verify_login(employee_number, password):
             self.destroy()  # Close the login window
-            main_window = MainWindow(employee_number)
+            main_window = MainWindow()
             main_window.mainloop()
         else:
             messagebox.showerror(
@@ -72,18 +72,52 @@ class Login(CTk):
             )
 
 
-class MainWindow(CTk):
-    def __init__(self, employee_number):
+class MainWindow(ctk.CTk):
+    def __init__(self):
         super().__init__()
         self.title("Main Window")
-        self.geometry("800x600")
+        self.geometry("1070x640")
         self.grid_columnconfigure(0, weight=1)
 
-        # Add your main window content here
-        welcome_label = CTkLabel(self, text=f"Welcome, Employee {employee_number}!")
-        welcome_label.pack(padx=20, pady=20)
+        self.tabview = ctk.CTkTabview(self)
+        self.tabview.pack(padx=18, pady=(0, 18), fill="both", expand=True)
+
+        self.students_tab = self.tabview.add("Students")
+        self.grades_tab = self.tabview.add("Grades")
+        self.documents_tab = self.tabview.add("Document Requests")
+        self.sms_tab = self.tabview.add("Bulk SMS")
+
+        self.students_tab_view = StudentsTab(self.students_tab)
+        self.grades_tab_view = GradesTab(self.grades_tab)
+        self.documents_tab_view = DocumentsTab(self.documents_tab)
+        self.sms_tab_view = SMSTab(self.sms_tab)
+
+        self.students_tab_view.pack(fill="both", expand=True)
+        self.grades_tab_view.pack(fill="both", expand=True)
+        self.documents_tab_view.pack(fill="both", expand=True)
+        self.sms_tab_view.pack(fill="both", expand=True)
+
+
+class StudentsTab(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent, fg_color="transparent")
+
+
+class GradesTab(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent, fg_color="transparent")
+
+
+class DocumentsTab(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent, fg_color="transparent")
+
+
+class SMSTab(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent, fg_color="transparent")
 
 
 # Example usage
-login_screen = Login()
+login_screen = MainWindow()
 login_screen.mainloop()
