@@ -1,5 +1,5 @@
 from supabase import create_client, Client
-from common.types import *
+from tables import *
 from datetime import datetime
 import os
 
