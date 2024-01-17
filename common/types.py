@@ -1,5 +1,6 @@
 from typing import TypedDict
 
+
 class Student(TypedDict):
     """Student data type.
 
@@ -13,6 +14,7 @@ class Student(TypedDict):
         email (str): The student's email.
         contact_number (str): The student's contact number.
     """
+
     student_id: str
     first_name: str
     middle_name: str
@@ -21,6 +23,7 @@ class Student(TypedDict):
     year_level: int
     email: str
     contact_number: str
+
 
 class Grade(TypedDict):
     """Grade data type.
@@ -37,6 +40,7 @@ class Grade(TypedDict):
         created_at (int): The time the grade was created.
         updated_at (int): The time the grade was updated.
     """
+
     grade_id: int
     student_id: str
     grade: float
@@ -47,6 +51,7 @@ class Grade(TypedDict):
     messaged: bool
     created_at: str
     updated_at: str
+
 
 class LoginInfo(TypedDict):
     """Login info data type.
@@ -59,12 +64,14 @@ class LoginInfo(TypedDict):
         middle_name (str): The middle name.
         last_name (str): The last name.
     """
+
     username: str
     employee_number: int
     hash: str
     first_name: str
     middle_name: str
     last_name: str
+
 
 class StudentRequest(TypedDict):
     id: int
@@ -81,6 +88,7 @@ class StudentRequest(TypedDict):
     created_at: str
     updated_at: str
 
+
 valid_tables = [
     "document_type",
     "grades",
@@ -92,3 +100,5 @@ valid_tables = [
     "subjects",
     "courses",
 ]
+
+remarks = {"incomplete_grade": 3, "failed_grade": 2, "passed_grade": 1}
