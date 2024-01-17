@@ -76,7 +76,7 @@ class Login(ctk.CTk):
 class MainWindow(ctk.CTkToplevel):
     def __init__(self, master):
         super().__init__(master)
-        self.title("Main Window")
+        self.title("Office of the University Registrar Inquiry System")
         self.geometry("1070x640")
         self.grid_columnconfigure(0, weight=1)
 
