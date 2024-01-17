@@ -153,7 +153,6 @@ class StudentsTab(ctk.CTkFrame):
         self.search_button = ctk.CTkButton(
             self.search_frame, text="🔍 Search", command=self.search, width=40
         )
-
         self.reset_button = ctk.CTkButton(
             self.search_frame,
             text="Reset",
@@ -204,6 +203,10 @@ class StudentsTab(ctk.CTkFrame):
 
     def search(self):
         student_number = self.search_bar.get()
+
+        if student_number == "":
+            return
+
         db = Database()
         student = db.get_student(student_number)
         if student is not None:
