@@ -368,10 +368,16 @@ class StudentsTab(ctk.CTkFrame):
         self.populate_students_table()
 
         # Show a message box with the number of students imported
-        messagebox.showinfo(
-            "Import Successful",
-            f"Successfully imported {len(students) - skipped} students. {skipped} students were skipped because they already exist in the database.",
-        )
+        if skipped > 0:
+            messagebox.showinfo(
+                "Import Successful",
+                f"{len(students) - skipped} student(s) imported. {skipped} student(s) skipped because they already exist.",
+            )
+        else:
+            messagebox.showinfo(
+                "Import Successful",
+                f"{len(students)} student(s) imported.",
+            )
 
 
 
