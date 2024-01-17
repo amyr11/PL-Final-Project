@@ -175,7 +175,7 @@ class StudentsTab(ctk.CTkFrame):
         )
         self.delete_student_button = ctk.CTkButton(
             self.buttons_frame,
-            text="🗑 Delete Student",
+            text="🗑",
             width=20,
             fg_color="red",
             hover_color="darkred",
@@ -183,7 +183,7 @@ class StudentsTab(ctk.CTkFrame):
         )
         self.edit_student_button = ctk.CTkButton(
             self.buttons_frame,
-            text="Edit Student",
+            text="🖋",
             width=20,
             command=self.edit_student_cmd,
         )
