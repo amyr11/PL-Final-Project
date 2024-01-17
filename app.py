@@ -114,6 +114,7 @@ class StudentsTab(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
         self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
 
         # Widgets
         self.students_table = ttk.Treeview(
@@ -145,16 +146,16 @@ class StudentsTab(ctk.CTkFrame):
         s = ttk.Style()
         s.configure("Treeview", rowheight=25)
 
-        self.button_frame = ctk.CTkFrame(self)
+        self.search_frame = ctk.CTkFrame(self)
         self.search_bar = ctk.CTkEntry(
-            self.button_frame, placeholder_text="Enter student no."
+            self.search_frame, placeholder_text="Enter student no."
         )
         self.search_button = ctk.CTkButton(
-            self.button_frame, text="🔍 Search", command=self.search, width=40
+            self.search_frame, text="🔍 Search", command=self.search, width=40
         )
 
         self.reset_button = ctk.CTkButton(
-            self.button_frame,
+            self.search_frame,
             text="Reset",
             command=self.reset_table,
             fg_color="grey",
@@ -162,11 +163,11 @@ class StudentsTab(ctk.CTkFrame):
         )
 
         # Grid layout
-        self.button_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
+        self.search_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
         self.search_bar.grid(row=0, column=0, sticky="w")
         self.search_button.grid(row=0, column=1, sticky="w", padx=(10, 0))
         self.reset_button.grid(row=0, column=2, sticky="w", padx=(10, 0))
-        self.students_table.grid(row=1, column=0, sticky="ew", padx=10, pady=10)
+        self.students_table.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
 
     def populate_students_table(self, students=None):
         if not students:
