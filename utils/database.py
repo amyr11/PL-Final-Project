@@ -23,13 +23,18 @@ class Database:
         Returns:
             Student: The student's data.
         """
-        return (
+        student = (
             self.client.table("student_info")
             .select("*")
             .eq("student_id", student_id)
             .execute()
-            .data[0]
+            .data
         )
+        
+        if student:
+            return student[0]
+        else:
+            return None
 
     def delete_student(self, student_id: str) -> None:
         """Delete a student's data from the database.
