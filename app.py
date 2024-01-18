@@ -1,9 +1,11 @@
-import select
 import tkinter.messagebox as messagebox
 from utils.database import Database
 import customtkinter as ctk
 from tkinter import ttk
 from datetime import datetime
+from utils.sms import *
+from utils.common import message_templates
+import re
 
 ctk.set_appearance_mode("dark")
 
@@ -84,7 +86,7 @@ class MainWindow(ctk.CTkToplevel):
         self.geometry("1120x640")
         self.grid_columnconfigure(0, weight=1)
 
-        self.tabview = ctk.CTkTabview(self)
+        self.tabview = ctk.CTkTabview(self, command=self.on_tab_change)
         self.tabview.pack(padx=18, pady=(0, 18), fill="both", expand=True)
 
         self.students_tab = self.tabview.add("Students")
@@ -112,6 +114,13 @@ class MainWindow(ctk.CTkToplevel):
         self.grab_release()  # Release the modal state
         self.destroy()  # Close the main window
         self.master.destroy()  # Show the login window again
+
+    def on_tab_change(self):
+        # Re-initialize selected tab
+        if self.tabview.get() == "Bulk SMS":
+            self.sms_tab_view.destroy()
+            self.sms_tab_view = SMSTab(self.sms_tab)
+            self.sms_tab_view.pack(fill="both", expand=True)
 
 
 class StudentsTab(ctk.CTkFrame):
@@ -1058,6 +1067,7 @@ class EditGradeWindow(ctk.CTkToplevel):
             {
                 "grade": grade,
                 "remark_id": infer_remark(grade),
+                "messaged": False,
             },
         )
         self.master.grades = db.get_student_grade(
@@ -1107,8 +1117,6 @@ class DocumentsTab(ctk.CTkFrame):
         self.documents_table.heading("received_date", text="Received Date")
         self.documents_table.heading("status", text="Status")
 
-        self.populate_documents_table()
-
         s = ttk.Style()
         s.configure("Treeview", rowheight=25)
 
@@ -1135,6 +1143,8 @@ class DocumentsTab(ctk.CTkFrame):
         )
         self.status_filter.set(self.status_filter_options[0])
         self.selected_status = self.status_filter_options[0].lower()
+
+        self.populate_documents_table()
 
         self.buttons_frame = ctk.CTkFrame(self)
         self.mark_as_claimed_button = ctk.CTkButton(
@@ -1204,7 +1214,7 @@ class DocumentsTab(ctk.CTkFrame):
 
         if documents is None:
             db = Database()
-            documents = db.get_document_requests_by_status("pending")
+            documents = db.get_document_requests_by_status(self.selected_status)
 
         self.documents = documents
 
@@ -1288,9 +1298,7 @@ class DocumentsTab(ctk.CTkFrame):
                 },
             )
 
-        self.populate_documents_table(
-            db.get_document_requests_by_status(self.selected_status)
-        )
+        self.populate_documents_table()
 
     def mark_as_ready_cmd(self):
         db = Database()
@@ -1314,9 +1322,7 @@ class DocumentsTab(ctk.CTkFrame):
                 },
             )
 
-        self.populate_documents_table(
-            db.get_document_requests_by_status(self.selected_status)
-        )
+        self.populate_documents_table()
 
     def mark_as_pending_cmd(self):
         db = Database()
@@ -1337,12 +1343,11 @@ class DocumentsTab(ctk.CTkFrame):
                 {
                     "student_request_status_id": 1,
                     "receive_date": None,
+                    "messaged": False,
                 },
             )
 
-        self.populate_documents_table(
-            db.get_document_requests_by_status(self.selected_status)
-        )
+        self.populate_documents_table()
 
     def delete_document_cmd(self):
         # Delete a document request
@@ -1369,9 +1374,7 @@ class DocumentsTab(ctk.CTkFrame):
             for index in indexes:
                 db.delete_document_request(self.documents[index]["id"])
 
-            self.populate_documents_table(
-                db.get_document_requests_by_status(self.selected_status)
-            )
+            self.populate_documents_table()
 
     def edit_document_cmd(self):
         # Edit a document request
@@ -1818,6 +1821,7 @@ class EditDocumentWindow(ctk.CTkToplevel):
                 "payment_date": payment_date,
                 "request_date": request_date,
                 "receive_date": receive_date if receive_date != "" else None,
+                "messaged": False,
             },
         )
 
@@ -1828,6 +1832,290 @@ class EditDocumentWindow(ctk.CTkToplevel):
 class SMSTab(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
+
+        self.grid_columnconfigure(0, weight=1)
+
+        sms_types = ["Incomplete Grades", "Failed Grades", "Requested Documents"]
+        self.selected_sms_type = sms_types[0]
+
+        # Widgets
+        self.sms_type_label = ctk.CTkLabel(self, text="Type")
+        self.sms_type_option = ctk.CTkOptionMenu(
+            self,
+            values=sms_types,
+            command=self.sms_type_option_callback,
+        )
+        self.sms_type_option.set(sms_types[0])
+
+        self.send_button = ctk.CTkButton(self, text="Send", command=self.send)
+        self.recipients_table = IncompleteGradesTable(self)
+
+        self.message_label = ctk.CTkLabel(self, text="Message")
+        self.variables_label = ctk.CTkLabel(self, text="Variables: ")
+
+        self.message_text_box = ctk.CTkTextbox(self, height=100)
+        self.set_message_text_box(message_templates["incomplete_grade"])
+
+        # Grid
+        self.sms_type_label.grid(row=0, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.sms_type_option.grid(row=1, column=0, padx=10, sticky="ew")
+        self.recipients_table.grid(row=2, column=0, padx=10, pady=(10, 0), sticky="ew")
+        self.message_label.grid(row=3, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.variables_label.grid(row=4, column=0, padx=10, sticky="w")
+        self.message_text_box.grid(row=5, column=0, padx=10, sticky="ew")
+        self.send_button.grid(row=6, column=0, padx=10, pady=(20, 10), sticky="ew")
+
+    def sms_type_option_callback(self, value):
+        self.recipients_table.destroy()
+        if value == "Incomplete Grades":
+            self.recipients_table = IncompleteGradesTable(self)
+            self.set_message_text_box(message_templates["incomplete_grade"])
+        elif value == "Failed Grades":
+            self.recipients_table = FailedGradesTable(self)
+            self.set_message_text_box(message_templates["failed_grade"])
+        elif value == "Requested Documents":
+            self.recipients_table.destroy()
+            self.recipients_table = RequestedDocumentsTable(self)
+            self.set_message_text_box(message_templates["requested_document"])
+        self.recipients_table.grid(row=2, column=0, padx=10, pady=(10, 0), sticky="ew")
+        self.selected_sms_type = value
+
+    def set_message_text_box(self, message_template):
+        variables = re.findall(r"\{([A-Za-z_]+)\}", message_template)
+        variables = list(set(variables))
+        variables.sort()
+        variables = ["{" + variable + "}" for variable in variables]
+        variables = ", ".join(variables)
+        self.variables_label.configure(text=f"Variables: {variables}")
+        self.message_text_box.delete("1.0", "end")
+        self.message_text_box.insert("1.0", message_template)
+
+    def send(self):
+        len_recipients = len(self.recipients_table.recipients)
+        if len_recipients == 0:
+            messagebox.showwarning(
+                "No recipients",
+                "Recipients table is empty",
+            )
+            return
+
+        if self.selected_sms_type == "Incomplete Grades":
+            self.send_incomplete_grades()
+        elif self.selected_sms_type == "Failed Grades":
+            self.send_failed_grades()
+        elif self.selected_sms_type == "Requested Documents":
+            self.send_requested_documents()
+
+        self.recipients_table.populate_recipients_table()
+
+        # Show success message with count of recipients
+        messagebox.showinfo(
+            "Success",
+            f"Message sent to {len_recipients} recipient(s).",
+        )
+
+    def send_incomplete_grades(self):
+        sms_driver = IncompleteGradeSMS(self.recipients_table.recipients)
+        sms_driver.send(self.message_text_box.get("1.0", "end"))
+
+        # Update the recipients table column "messaged"
+        db = Database()
+        for recipient in self.recipients_table.recipients:
+            db.update_grade(recipient["grade_id"], {"messaged": True})
+
+    def send_failed_grades(self):
+        sms_driver = FailedGradeSMS(self.recipients_table.recipients)
+        sms_driver.send(self.message_text_box.get("1.0", "end"))
+
+        # Update the recipients table column "messaged"
+        db = Database()
+        for recipient in self.recipients_table.recipients:
+            db.update_grade(recipient["grade_id"], {"messaged": True})
+
+    def send_requested_documents(self):
+        sms_driver = DocumentsSMS(self.recipients_table.recipients)
+        sms_driver.send(self.message_text_box.get("1.0", "end"))
+
+        # Update the recipients table column "messaged"
+        db = Database()
+        for recipient in self.recipients_table.recipients:
+            db.update_document_request(recipient["id"], {"messaged": True})
+
+
+class IncompleteGradesTable(ctk.CTkFrame):
+    def __init__(self, master):
+        super().__init__(master, fg_color="transparent")
+        self.grid_columnconfigure(0, weight=1)
+
+        # Widgets
+        self.recipients_table = ttk.Treeview(
+            self,
+            columns=(
+                "contact_number",
+                "student_id",
+                "subject_code",
+                "course_code",
+                "year",
+                "sem",
+            ),
+            show="headings",
+            selectmode="extended",
+        )
+        # Header setup
+        self.recipients_table.heading("contact_number", text="Contact Number")
+        self.recipients_table.heading("student_id", text="Student ID")
+        self.recipients_table.heading("subject_code", text="Subject Code")
+        self.recipients_table.heading("course_code", text="Course Code")
+        self.recipients_table.heading("year", text="Year")
+        self.recipients_table.heading("sem", text="Semester")
+
+        self.populate_recipients_table()
+
+        s = ttk.Style()
+        s.configure("Treeview", rowheight=25)
+
+        # Grid layout
+        self.recipients_table.grid(row=0, column=0, sticky="ew")
+
+    def populate_recipients_table(self):
+        db = Database()
+        self.recipients = db.get_all_grade_not_messaged_yet("incomplete_grade")
+
+        # Delete
+        self.recipients_table.delete(*self.recipients_table.get_children())
+
+        for recipient in self.recipients:
+            self.recipients_table.insert(
+                "",
+                "end",
+                values=(
+                    recipient["student_info"]["contact_number"],
+                    recipient["student_id"],
+                    recipient["subjects"]["code"],
+                    recipient["student_info"]["course_code"],
+                    recipient["year"],
+                    recipient["sem"],
+                ),
+            )
+
+        # Set alternating row colors
+        self.recipients_table.tag_configure("oddrow", background="#252525")
+        self.recipients_table.tag_configure("evenrow", background="#353535")
+        # Apply alternating colors to rows
+        for index, recipient in enumerate(self.recipients_table.get_children()):
+            if index % 2 == 0:
+                self.recipients_table.item(recipient, tags=("evenrow",))
+            else:
+                self.recipients_table.item(recipient, tags=("oddrow",))
+
+        self.master.send_button.configure(
+            text=f"Send to {len(self.recipients)} recipient(s)"
+        )
+
+
+class FailedGradesTable(IncompleteGradesTable):
+    def __init__(self, master):
+        super().__init__(master)
+
+    def populate_recipients_table(self):
+        db = Database()
+        self.recipients = db.get_all_grade_not_messaged_yet("failed_grade")
+
+        # Delete
+        self.recipients_table.delete(*self.recipients_table.get_children())
+
+        for recipient in self.recipients:
+            self.recipients_table.insert(
+                "",
+                "end",
+                values=(
+                    recipient["student_info"]["contact_number"],
+                    recipient["student_id"],
+                    recipient["subjects"]["code"],
+                    recipient["student_info"]["course_code"],
+                    recipient["year"],
+                    recipient["sem"],
+                ),
+            )
+
+        # Set alternating row colors
+        self.recipients_table.tag_configure("oddrow", background="#252525")
+        self.recipients_table.tag_configure("evenrow", background="#353535")
+        # Apply alternating colors to rows
+        for index, recipient in enumerate(self.recipients_table.get_children()):
+            if index % 2 == 0:
+                self.recipients_table.item(recipient, tags=("evenrow",))
+            else:
+                self.recipients_table.item(recipient, tags=("oddrow",))
+
+        self.master.send_button.configure(
+            text=f"Send to {len(self.recipients)} recipient(s)"
+        )
+
+
+class RequestedDocumentsTable(ctk.CTkFrame):
+    def __init__(self, master):
+        super().__init__(master, fg_color="transparent")
+        self.grid_columnconfigure(0, weight=1)
+
+        # Widgets
+        self.recipients_table = ttk.Treeview(
+            self,
+            columns=(
+                "contact_number",
+                "student_id",
+                "request_id",
+                "document_type",
+            ),
+            show="headings",
+            selectmode="extended",
+        )
+        # Header setup
+        self.recipients_table.heading("contact_number", text="Contact Number")
+        self.recipients_table.heading("student_id", text="Student ID")
+        self.recipients_table.heading("request_id", text="Request ID")
+        self.recipients_table.heading("document_type", text="Document Type")
+
+        self.populate_recipients_table()
+
+        s = ttk.Style()
+        s.configure("Treeview", rowheight=25)
+
+        # Grid layout
+        self.recipients_table.grid(row=0, column=0, sticky="ew")
+
+    def populate_recipients_table(self):
+        db = Database()
+        self.recipients = db.get_all_document_requests_not_messaged_yet()
+
+        # Delete
+        self.recipients_table.delete(*self.recipients_table.get_children())
+
+        for recipient in self.recipients:
+            self.recipients_table.insert(
+                "",
+                "end",
+                values=(
+                    recipient["student_info"]["contact_number"],
+                    recipient["student_id"],
+                    recipient["id"],
+                    recipient["document_type"]["type"],
+                ),
+            )
+
+        # Set alternating row colors
+        self.recipients_table.tag_configure("oddrow", background="#252525")
+        self.recipients_table.tag_configure("evenrow", background="#353535")
+        # Apply alternating colors to rows
+        for index, recipient in enumerate(self.recipients_table.get_children()):
+            if index % 2 == 0:
+                self.recipients_table.item(recipient, tags=("evenrow",))
+            else:
+                self.recipients_table.item(recipient, tags=("oddrow",))
+
+        self.master.send_button.configure(
+            text=f"Send to {len(self.recipients)} recipient(s)"
+        )
 
 
 # Example usage

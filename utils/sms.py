@@ -1,6 +1,6 @@
 import requests
-from common.types import remarks
 import os
+from .common import message_templates
 
 api_key = os.environ.get("SMS_CHEF_API_KEY")
 device_id = os.environ.get("SMS_CHEF_DEVICE_ID")
@@ -57,7 +57,7 @@ class BulkSMS:
 class IncompleteGradeSMS(BulkSMS):
     def __init__(self, grades):
         super().__init__()
-        self.message_template = "Hi {first_name} {last_name}, you have an incomplete grade in: {subjects}. Please contact your professor for more information."
+        self.message_template = message_templates["incomplete_grade"]
         self._process_grades(grades)
 
     def _process_grades(self, grades):
@@ -89,14 +89,14 @@ class IncompleteGradeSMS(BulkSMS):
 class FailedGradeSMS(IncompleteGradeSMS):
     def __init__(self, grades):
         super().__init__(grades)
-        self.message_template = "Hi {first_name} {last_name}, you have a failed grade in: {subjects}. Please contact your professor for more information."
+        self.message_template = message_templates["failed_grade"]
 
 
 class DocumentsSMS(BulkSMS):
     def __init__(self, documents):
         super().__init__()
 
-        self.message_template = "Hi {first_name} {last_name}, your {document} is now ready for pickup. Please proceed to the registrar's office."
+        self.message_template = message_templates["requested_document"]
 
         self._process_documents(documents)
 

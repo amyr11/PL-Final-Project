@@ -86,7 +86,7 @@ class StudentRequest(TypedDict):
     student_request_status_id: int
     created_at: str
     updated_at: str
-    messaged:bool
+    messaged: bool
 
 
 valid_tables = [
@@ -102,3 +102,9 @@ valid_tables = [
 ]
 
 remarks = {"incomplete_grade": 3, "failed_grade": 2, "passed_grade": 1}
+
+message_templates = {
+    "incomplete_grade": "Hi {first_name} {last_name}, you have an incomplete grade in: {subjects}. Please contact your professor for more information.",
+    "failed_grade": "Hi {first_name} {last_name}, you have a failed grade in: {subjects}. Please contact your professor for more information.",
+    "requested_document": "Hi {first_name} {last_name}, your {document} is now ready for pickup. Please proceed to the registrar's office.",
+}

@@ -1,5 +1,5 @@
 from supabase import create_client, Client
-from .tables import *
+from .common import *
 from datetime import datetime
 import os
 import hashlib
@@ -38,12 +38,12 @@ class Database:
             .execute()
             .data
         )
-        
+
         if student:
             return student[0]
         else:
             return None
-    
+
     def get_student_grade(self, student_id: str, year: int, sem: int) -> Student:
         """Get a student's data from the database.
 
@@ -62,7 +62,7 @@ class Database:
             .execute()
             .data
         )
-        
+
         if student:
             return student
         else:
@@ -106,7 +106,7 @@ class Database:
         """
         self.client.table("student_info").insert(data).execute()
 
-    def get_all_grade(self, remark=None):
+    def get_all_grade_not_messaged_yet(self, remark=None):
         """Get all grades info from the database.
 
         Args:
@@ -116,13 +116,14 @@ class Database:
             Grades: The grades' data.
         """
 
-        select_stmt = "student_id, student_info(last_name, first_name, middle_name, contact_number), remarks(remark), subjects(title), year, sem"
+        select_stmt = "student_info(*), remarks(remark), subjects(*), *"
 
         if remark:
             return (
                 self.client.table("grades")
                 .select(select_stmt)
                 .eq("remark_id", remarks[remark])
+                .eq("messaged", False)
                 .execute()
                 .data
             )
@@ -238,7 +239,7 @@ class Database:
             .execute()
             .data[0]
         )
-    
+
     def get_document_requests_by_status(self, status: str) -> StudentRequest:
         """Get all student request's data from the database.
 
@@ -254,30 +255,15 @@ class Database:
             "ready": 2,
             "claimed": 3,
         }
-        assert status in student_request_status, f"Invalid status: {status}. Valid statuses are: {student_request_status}"
+        assert (
+            status in student_request_status
+        ), f"Invalid status: {status}. Valid statuses are: {student_request_status}"
         select_stmt = "document_type(type), request_statuses(status), *"
 
         return (
             self.client.table("student_requests")
             .select(select_stmt)
             .eq("student_request_status_id", student_request_status[status])
-            .execute()
-            .data
-        )
-
-    def get_all_ready_requests(self):
-        """Get all document requests info that are ready to claim from the database.
-
-        Returns:
-            Document requests: The requests' data.
-        """
-
-        select_stmt = "student_id, student_info(last_name, first_name, middle_name, contact_number), document_type(type), *"
-
-        return (
-            self.client.table("student_requests")
-            .select(select_stmt)
-            .eq("student_request_status_id", 2)
             .execute()
             .data
         )
@@ -349,6 +335,24 @@ class Database:
             .select("*")
             .eq("employee_number", employee_number)
             .eq("hash", md5_password)
+            .execute()
+            .data
+        )
+
+    def get_all_document_requests_not_messaged_yet(self):
+        """Get all document requests info that are ready to claim from the database.
+
+        Returns:
+            Document requests: The requests' data.
+        """
+
+        select_stmt = "student_info(*), document_type(*), *"
+
+        return (
+            self.client.table("student_requests")
+            .select(select_stmt)
+            .eq("student_request_status_id", 2)
+            .eq("messaged", False)
             .execute()
             .data
         )
