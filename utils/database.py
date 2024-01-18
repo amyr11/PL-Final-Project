@@ -144,7 +144,7 @@ class Database:
             Grade: The grade's updated data.
         """
         data["updated_at"] = str(datetime.fromtimestamp(now))
-        self.client.table("grades").update(data).eq("grade", grade_id).execute()
+        self.client.table("grades").update(data).eq("grade_id", grade_id).execute()
 
     def insert_grade(self, data: Grade) -> Grade:
         """Insert a grade's data into the database.
