@@ -1,7 +1,11 @@
 import tkinter.messagebox as messagebox
+
+from numpy import pad
 from utils.database import Database
 import customtkinter as ctk
 from tkinter import ttk
+
+ctk.set_appearance_mode("dark")
 
 
 class Login(ctk.CTk):
@@ -151,10 +155,7 @@ class StudentsTab(ctk.CTkFrame):
             self.search_frame, placeholder_text="Enter student no."
         )
         self.search_button = ctk.CTkButton(
-            self.search_frame,
-            text="🔍 Search", 
-            command=self.search, 
-            width=40
+            self.search_frame, text="🔍 Search", command=self.search, width=40
         )
         self.reset_button = ctk.CTkButton(
             self.search_frame,
@@ -318,20 +319,18 @@ class StudentsTab(ctk.CTkFrame):
     def add_student_cmd(self):
         add_student_window = AddStudentWindow(self)
         add_student_window.grab_set()
-    
+
     def import_excel_cmd(self):
         # open file dialog
         from tkinter import filedialog
         import pandas as pd
 
         # Only allow excel files
-        file_path = filedialog.askopenfilename(
-            filetypes=[("Excel files", "*.xlsx")]
-        )
+        file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
 
         if file_path == "":
             return
-        
+
         # Read the excel file
         df = pd.read_excel(file_path)
 
@@ -350,7 +349,7 @@ class StudentsTab(ctk.CTkFrame):
                 "The excel file you selected is invalid.",
             )
             return
-        
+
         # Convert the dataframe to a list of dictionaries
         students = df.to_dict("records")
 
@@ -364,7 +363,7 @@ class StudentsTab(ctk.CTkFrame):
                 continue
 
             db.insert_student(student)
-        
+
         self.populate_students_table()
 
         # Show a message box with the number of students imported
@@ -378,7 +377,6 @@ class StudentsTab(ctk.CTkFrame):
                 "Import Successful",
                 f"{len(students)} student(s) imported.",
             )
-
 
 
 class AddStudentWindow(ctk.CTkToplevel):
@@ -652,6 +650,149 @@ class EditStudentWindow(ctk.CTkToplevel):
 class GradesTab(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+
+        # Widgets
+        self.preview_frame = ctk.CTkFrame(self, corner_radius=0)
+        self.labels_frame = ctk.CTkFrame(self.preview_frame, corner_radius=0)
+        self.values_frame = ctk.CTkFrame(self.preview_frame, corner_radius=0)
+        self.student_number_label = ctk.CTkLabel(
+            self.labels_frame, text="Student Number"
+        )
+        self.student_number_value = ctk.CTkLabel(self.values_frame, text="")
+        self.student_name_label = ctk.CTkLabel(self.labels_frame, text="Student Name")
+        self.student_name_value = ctk.CTkLabel(self.values_frame, text="")
+        self.course_label = ctk.CTkLabel(self.labels_frame, text="Course")
+        self.course_value = ctk.CTkLabel(self.values_frame, text="")
+        self.year_level_label = ctk.CTkLabel(self.labels_frame, text="Year Level")
+        self.year_level_value = ctk.CTkLabel(self.values_frame, text="")
+
+        self.labels_frame.configure(fg_color="#252525")
+        self.values_frame.configure(fg_color="#353535")
+
+        self.search_frame = ctk.CTkFrame(self)
+        self.search_bar = ctk.CTkEntry(
+            self.search_frame, placeholder_text="Enter student no."
+        )
+        self.year_option_label = ctk.StringVar(value="Year")
+        self.year_option = ctk.CTkOptionMenu(
+            self.search_frame,
+            values=["Current", "1", "2", "3", "4", "5"],
+            variable=self.year_option_label,
+        )
+        self.semester_option_label = ctk.StringVar(value="Semester")
+        self.semester_option = ctk.CTkOptionMenu(
+            self.search_frame, values=["1", "2"], variable=self.semester_option_label
+        )
+        self.search_button = ctk.CTkButton(
+            self.search_frame, text="🔍 Search", command=self.search, width=40
+        )
+        self.reset_button = ctk.CTkButton(
+            self.search_frame,
+            text="Reset",
+            command=self.reset,
+            fg_color="grey",
+            width=20,
+        )
+
+        self.buttons_frame = ctk.CTkFrame(self)
+        self.delete_grade_button = ctk.CTkButton(
+            self.buttons_frame,
+            text="🗑",
+            width=20,
+            fg_color="red",
+            hover_color="darkred",
+            command=self.delete_grade_cmd,
+        )
+        self.edit_grade_button = ctk.CTkButton(
+            self.buttons_frame,
+            text="🖋",
+            width=20,
+            command=self.edit_grade_cmd,
+        )
+        self.add_grade_button = ctk.CTkButton(
+            self.buttons_frame,
+            text="+ Add Grade",
+            width=20,
+            command=self.add_grade_cmd,
+        )
+
+        self.grades_table = ttk.Treeview(
+            self,
+            columns=(
+                "subject_code",
+                "subject_title",
+                "units",
+                "grade",
+                "remarks",
+            ),
+            show="headings",
+        )
+        self.grades_table.heading("subject_code", text="Subject Code")
+        self.grades_table.heading("subject_title", text="Subject Title")
+        self.grades_table.heading("units", text="Units")
+        self.grades_table.heading("grade", text="Grade")
+        self.grades_table.heading("remarks", text="Remarks")
+
+        # Grid layout
+        self.preview_frame.grid(
+            row=0, column=0, sticky="ew", padx=10, pady=(10, 0), columnspan=2
+        )
+        self.preview_frame.grid_columnconfigure(0, weight=0)
+        self.preview_frame.grid_columnconfigure(1, weight=2)
+        self.labels_frame.grid(row=0, column=0, sticky="ew")
+        self.values_frame.grid(row=0, column=1, sticky="ew")
+        self.student_number_label.grid(
+            row=0, column=0, padx=10, pady=(10, 0), sticky="w"
+        )
+        self.student_number_value.grid(
+            row=0, column=0, padx=10, pady=(10, 0), sticky="w"
+        )
+        self.student_name_label.grid(row=1, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.student_name_value.grid(row=1, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.course_label.grid(row=2, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.course_value.grid(row=2, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.year_level_label.grid(row=3, column=0, padx=10, pady=(10, 10), sticky="w")
+        self.year_level_value.grid(row=3, column=0, padx=10, pady=(10, 10), sticky="w")
+        self.search_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=20)
+        self.buttons_frame.grid(row=1, column=1, sticky="e", padx=10, pady=20)
+        self.search_bar.grid(row=0, column=0, sticky="w")
+        self.year_option.grid(row=0, column=1, sticky="w", padx=(10, 0))
+        self.semester_option.grid(row=0, column=2, sticky="w", padx=(10, 0))
+        self.search_button.grid(row=0, column=3, sticky="w", padx=(10, 0))
+        self.reset_button.grid(row=0, column=4, sticky="w", padx=(10, 0))
+        self.delete_grade_button.grid(row=0, column=0, sticky="e", padx=(10, 0))
+        self.edit_grade_button.grid(row=0, column=1, sticky="e", padx=(10, 0))
+        self.add_grade_button.grid(row=0, column=2, sticky="e", padx=(10, 0))
+        self.grades_table.grid(
+            row=2, column=0, sticky="nsew", padx=10, pady=(0, 10), columnspan=2
+        )
+
+    def set_preview(self, student_number, student_name, course, year_level):
+        self.student_number_value.configure(text=student_number)
+        self.student_name_value.configure(text=student_name)
+        self.course_value.configure(text=course)
+        self.year_level_value.configure(text=year_level)
+
+    def search(self):
+        pass
+
+    def reset(self):
+        pass
+
+    def populate_grades_table(self, grades):
+        pass
+
+    def delete_grade_cmd(self):
+        pass
+
+    def edit_grade_cmd(self):
+        pass
+
+    def add_grade_cmd(self):
+        pass
 
 
 class DocumentsTab(ctk.CTkFrame):
