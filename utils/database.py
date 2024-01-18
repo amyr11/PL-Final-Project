@@ -35,6 +35,30 @@ class Database:
             return student[0]
         else:
             return None
+    
+    def get_student_grade(self, student_id: str, year: int, sem: int) -> Student:
+        """Get a student's data from the database.
+
+        Args:
+            student_id (str): The student's ID.
+
+        Returns:
+            Student: The student's data.
+        """
+        student = (
+            self.client.table("grades")
+            .select("remarks(remark), subjects(*), *")
+            .eq("student_id", student_id)
+            .eq("year", year)
+            .eq("sem", sem)
+            .execute()
+            .data
+        )
+        
+        if student:
+            return student
+        else:
+            return None
 
     def delete_student(self, student_id: str) -> None:
         """Delete a student's data from the database.
@@ -106,7 +130,7 @@ class Database:
         Returns:
             None
         """
-        self.client.table("grades").delete().eq("grade", grade_id).execute()
+        self.client.table("grades").delete().eq("grade_id", grade_id).execute()
 
     def update_grade(self, grade_id: int, data: Grade) -> Grade:
         now = datetime.now().timestamp()

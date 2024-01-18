@@ -35,7 +35,7 @@ class Grade(TypedDict):
         remark_id (int): The remark's ID.
         year (int): The school year.
         sem (int): The semester.
-        subject_id (int): The subject's ID.
+        subject_code (str): The subject's code.
         messaged (bool): Whether the student has been messaged.
         created_at (int): The time the grade was created.
         updated_at (int): The time the grade was updated.
@@ -43,11 +43,11 @@ class Grade(TypedDict):
 
     grade_id: int
     student_id: str
-    grade: float
+    grade: float | None
     remark_id: int
     year: int
     sem: int
-    subject_id: int
+    subject_code: str
     messaged: bool
     created_at: str
     updated_at: str

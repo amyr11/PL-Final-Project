@@ -654,6 +654,12 @@ class GradesTab(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
 
+        # Variables
+        self.student = None
+        self.grades = None
+        self.year = None
+        self.semester = None
+
         # Widgets
         self.preview_frame = ctk.CTkFrame(self, corner_radius=0)
         self.labels_frame = ctk.CTkFrame(self.preview_frame, corner_radius=0)
@@ -679,12 +685,16 @@ class GradesTab(ctk.CTkFrame):
         self.year_option_label = ctk.StringVar(value="Year")
         self.year_option = ctk.CTkOptionMenu(
             self.search_frame,
-            values=["Current", "1", "2", "3", "4", "5"],
+            values=["1", "2", "3", "4", "5"],
             variable=self.year_option_label,
+            command=self.year_option_callback,
         )
         self.semester_option_label = ctk.StringVar(value="Semester")
         self.semester_option = ctk.CTkOptionMenu(
-            self.search_frame, values=["1", "2"], variable=self.semester_option_label
+            self.search_frame,
+            values=["1", "2"],
+            variable=self.semester_option_label,
+            command=self.semester_option_callback,
         )
         self.search_button = ctk.CTkButton(
             self.search_frame, text="🔍 Search", command=self.search, width=40
@@ -777,22 +787,202 @@ class GradesTab(ctk.CTkFrame):
         self.year_level_value.configure(text=year_level)
 
     def search(self):
-        pass
+        student_number = self.search_bar.get()
+
+        if student_number == "":
+            return
+
+        if self.year is None or self.semester is None:
+            messagebox.showwarning(
+                "Missing Year and Semester", "Please select a year and semester."
+            )
+            return
+
+        db = Database()
+        student_grade = db.get_student_grade(student_number, self.year, self.semester)
+        student_info = db.get_student(student_number)
+        
+        if student_info is None:
+            messagebox.showwarning(
+                "Student not found", "Student number not found in the database."
+            )
+            return
+
+        self.student = student_info
+        self.grades = student_grade
+        self.set_preview(
+            student_info["student_id"],
+            f"{student_info['first_name']} {student_info['middle_name']} {student_info['last_name']}",
+            student_info["course_code"],
+            student_info["year_level"],
+        )
+        self.populate_grades_table(student_grade)
 
     def reset(self):
-        pass
+        self.set_preview("", "", "", "")
+        self.populate_grades_table()
+        self.year_option_label.set("Year")
+        self.semester_option_label.set("Semester")
+        self.student = None
+        self.grades = None
+        self.year = None
+        self.semester = None
 
-    def populate_grades_table(self, grades):
-        pass
+    def populate_grades_table(self, grades=None):
+        self.grades_table.delete(*self.grades_table.get_children())
+
+        if grades is None:
+            return
+
+        for grade in grades:
+            self.grades_table.insert(
+                "",
+                "end",
+                values=(
+                    grade["subjects"]["code"],
+                    grade["subjects"]["title"],
+                    grade["subjects"]["units"],
+                    "{:.2f}".format(grade["grade"]),  # Display grade as a floating number with 2 decimal places
+                    grade["remarks"]["remark"],
+                ),
+            )
+
+        # Set alternating row colors
+        self.grades_table.tag_configure("oddrow", background="#252525")
+        self.grades_table.tag_configure("evenrow", background="#353535")
+        # Apply alternating colors to rows
+        for index, grade in enumerate(self.grades_table.get_children()):
+            if index % 2 == 0:
+                self.grades_table.item(grade, tags=("evenrow",))
+            else:
+                self.grades_table.item(grade, tags=("oddrow",))
 
     def delete_grade_cmd(self):
-        pass
+        selected = self.grades_table.selection()
+        if not selected:
+            messagebox.showwarning(
+                "No grade selected", "Please select a grade to delete."
+            )
+            return
+
+        confirmation = messagebox.askyesno(
+            "Delete Grade",
+            "Are you sure you want to delete the selected grade(s)?",
+        )
+
+        if confirmation:
+            # Get the index of the selected grades
+            indexes = []
+            for grade in selected:
+                indexes.append(self.grades_table.index(grade))
+
+            # Delete the grades from the database
+            db = Database()
+            for index in indexes:
+                db.delete_grade(self.grades[index]["grade_id"])
+            
+            self.grades = db.get_student_grade(
+                self.student["student_id"], self.year, self.semester
+            )
+            self.populate_grades_table(self.grades)
 
     def edit_grade_cmd(self):
         pass
 
     def add_grade_cmd(self):
-        pass
+        # Check if a student is selected and a year and sem
+        if self.student is None:
+            messagebox.showwarning(
+                "No student selected", "Please select a student."
+            )
+            return
+        
+        if self.year is None or self.semester is None:
+            messagebox.showwarning(
+                "Missing Year and Semester", "Please select a year and semester."
+            )
+            return
+        
+        add_grade_window = AddGradeWindow(self, self.student, self.year, self.semester)
+        add_grade_window.grab_set()
+
+    def year_option_callback(self, value):
+        self.year = value
+
+    def semester_option_callback(self, value):
+        self.semester = value
+
+
+class AddGradeWindow(ctk.CTkToplevel):
+    def __init__(self, master, student, year, semester):
+        super().__init__(master)
+        self.title("Add Grade")
+        self.grid_columnconfigure(0, weight=1)
+
+        self.student = student
+        self.year = year
+        self.semester = semester
+
+        self.subject_code_label = ctk.CTkLabel(self, text="Subject Code")
+        self.subject_code_entry = ctk.CTkEntry(self)
+
+        self.grade_label = ctk.CTkLabel(self, text="Grade")
+        self.grade_entry = ctk.CTkEntry(self)
+
+        self.submit_button = ctk.CTkButton(self, text="Submit", command=self.submit)
+
+        self.subject_code_label.grid(row=0, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.subject_code_entry.grid(row=1, column=0, padx=10, sticky="ew")
+
+        self.grade_label.grid(row=2, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.grade_entry.grid(row=3, column=0, padx=10, sticky="ew")
+
+        self.submit_button.grid(row=4, column=0, padx=10, pady=(20, 10), sticky="ew")
+
+    def submit(self):
+        subject_code = self.subject_code_entry.get()
+        grade = self.grade_entry.get()
+
+        try:
+            grade = None if grade == "" else float(grade)
+        except ValueError:
+            messagebox.showwarning(
+                "Invalid Grade", "Please enter a valid grade (1-5) or empty."
+            )
+            return
+
+        # Inferred remarks based on the grade
+        remark_id = 1 if grade <= 3 else 2 if grade > 3 else 3
+
+        # Validate the data
+        if not subject_code:
+            messagebox.showwarning(
+                "Missing Fields", "Please fill out necessary fields before submitting."
+            )
+            return
+
+        if not (1 <= grade <= 5):
+            messagebox.showwarning(
+                "Invalid Grade", "Please enter a valid grade (1-5) or empty."
+            )
+            return
+
+        db = Database()
+        db.insert_grade(
+            {
+                "student_id": self.student["student_id"],
+                "year": self.year,
+                "sem": self.semester,
+                "subject_code": subject_code,
+                "grade": grade,
+                "remark_id": remark_id,
+            }
+        )
+        self.master.grades = db.get_student_grade(
+            self.student["student_id"], self.year, self.semester
+        )
+        self.master.populate_grades_table(self.master.grades)
+        self.destroy()
 
 
 class DocumentsTab(ctk.CTkFrame):
