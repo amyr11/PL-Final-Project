@@ -212,7 +212,7 @@ class Database:
         """
         self.client.table("login").insert(data).execute()
 
-    def get_student_request(self, id: int) -> StudentRequest:
+    def get_document_request(self, id: int) -> StudentRequest:
         """Get a student request's data from the database.
 
         Args:
@@ -221,12 +221,40 @@ class Database:
         Returns:
             StudentRequest: The student request's data.
         """
+        select_stmt = "document_type(type), request_statuses(status), *"
+
         return (
             self.client.table("student_requests")
-            .select("*")
+            .select(select_stmt)
             .eq("id", id)
             .execute()
             .data[0]
+        )
+    
+    def get_document_requests_by_status(self, status: str) -> StudentRequest:
+        """Get all student request's data from the database.
+
+        Args:
+            status (str): The student request's status.
+
+        Returns:
+            StudentRequest: The student request's data.
+        """
+
+        student_request_status = {
+            "pending": 1,
+            "ready": 2,
+            "claimed": 3,
+        }
+        assert status in student_request_status, f"Invalid status: {status}. Valid statuses are: {student_request_status}"
+        select_stmt = "document_type(type), request_statuses(status), *"
+
+        return (
+            self.client.table("student_requests")
+            .select(select_stmt)
+            .eq("student_request_status_id", student_request_status[status])
+            .execute()
+            .data
         )
 
     def get_all_ready_requests(self):

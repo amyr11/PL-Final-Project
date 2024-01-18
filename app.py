@@ -842,9 +842,7 @@ class GradesTab(ctk.CTkFrame):
                     grade["subjects"]["code"],
                     grade["subjects"]["title"],
                     grade["subjects"]["units"],
-                    "-"
-                    if grade["grade"] is None
-                    else "{:.2f}".format(grade["grade"]),
+                    "-" if grade["grade"] is None else "{:.2f}".format(grade["grade"]),
                     grade["remarks"]["remark"],
                 ),
             )
@@ -973,7 +971,7 @@ class AddGradeWindow(ctk.CTkToplevel):
                 "Please enter a valid grade (1-5).",
             )
             return
-        
+
         grade = None if grade == "" else float(grade)
 
         db = Database()
@@ -1051,7 +1049,7 @@ class EditGradeWindow(ctk.CTkToplevel):
                 "Please enter a valid grade (1-5).",
             )
             return
-        
+
         grade = None if grade == "" else float(grade)
 
         db = Database()
@@ -1072,6 +1070,206 @@ class EditGradeWindow(ctk.CTkToplevel):
 class DocumentsTab(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+
+        # Widgets
+        self.documents_table = ttk.Treeview(
+            self,
+            columns=(
+                "request_id",
+                "student_id",
+                "mode",
+                "document_type",
+                "num_of_copies",
+                "purpose",
+                "paid_amount",
+                "receipt_no",
+                "payment_date",
+                "requested_date",
+                "received_date",
+                "status",
+            ),
+            show="headings",
+            selectmode="extended",
+        )
+        # Header setup
+        self.documents_table.heading("request_id", text="Request ID")
+        self.documents_table.heading("student_id", text="Student ID")
+        self.documents_table.heading("mode", text="Mode")
+        self.documents_table.heading("document_type", text="Document Type")
+        self.documents_table.heading("num_of_copies", text="Number of Copies")
+        self.documents_table.heading("purpose", text="Purpose")
+        self.documents_table.heading("paid_amount", text="Paid Amount")
+        self.documents_table.heading("receipt_no", text="Receipt No.")
+        self.documents_table.heading("payment_date", text="Payment Date")
+        self.documents_table.heading("requested_date", text="Requested Date")
+        self.documents_table.heading("received_date", text="Received Date")
+        self.documents_table.heading("status", text="Status")
+
+        self.populate_documents_table()
+
+        s = ttk.Style()
+        s.configure("Treeview", rowheight=25)
+
+        self.search_frame = ctk.CTkFrame(self)
+        self.search_bar = ctk.CTkEntry(
+            self.search_frame, placeholder_text="Enter request ID"
+        )
+        self.search_button = ctk.CTkButton(
+            self.search_frame, text="🔍 Search", command=self.search, width=40
+        )
+        self.reset_button = ctk.CTkButton(
+            self.search_frame,
+            text="Reset",
+            command=self.reset_table,
+            fg_color="grey",
+            width=20,
+        )
+
+        self.status_filter_options = ["Pending", "Ready", "Claimed"]
+        self.status_filter = ctk.CTkOptionMenu(
+            self.search_frame,
+            values=self.status_filter_options,
+            command=self.status_filter_callback,
+        )
+        self.status_filter.set(self.status_filter_options[0])
+
+        self.buttons_frame = ctk.CTkFrame(self)
+        self.mark_as_claimed_button = ctk.CTkButton(
+            self.buttons_frame,
+            text="Mark as Claimed",
+            command=self.mark_as_claimed_cmd,
+            width=20,
+            fg_color="grey",
+            hover_color="darkgrey",
+        )
+        self.mark_as_ready_button = ctk.CTkButton(
+            self.buttons_frame,
+            text="Mark as Ready",
+            command=self.mark_as_ready_cmd,
+            width=20,
+            fg_color="grey",
+            hover_color="darkgrey",
+        )
+        self.delete_document_button = ctk.CTkButton(
+            self.buttons_frame,
+            text="🗑",
+            width=20,
+            fg_color="red",
+            hover_color="darkred",
+            command=self.delete_document_cmd,
+        )
+        self.edit_document_button = ctk.CTkButton(
+            self.buttons_frame,
+            text="🖋",
+            width=20,
+            command=self.edit_document_cmd,
+        )
+        self.add_document_button = ctk.CTkButton(
+            self.buttons_frame,
+            text="+ Add Document",
+            width=20,
+            command=self.add_document_cmd,
+        )
+
+        # Grid layout
+        self.search_frame.grid(row=0, column=0, sticky="w", padx=10, pady=10)
+        self.buttons_frame.grid(row=0, column=1, sticky="e", padx=10, pady=10)
+        self.search_bar.grid(row=0, column=0, sticky="w")
+        self.search_button.grid(row=0, column=1, sticky="w", padx=(10, 0))
+        self.reset_button.grid(row=0, column=2, sticky="w", padx=(10, 0))
+        self.status_filter.grid(row=0, column=3, sticky="w", padx=(10, 0))
+        self.mark_as_claimed_button.grid(row=0, column=0, sticky="e", padx=(10, 0))
+        self.mark_as_ready_button.grid(row=0, column=1, sticky="e", padx=(10, 0))
+        self.delete_document_button.grid(row=0, column=2, sticky="e", padx=(10, 0))
+        self.edit_document_button.grid(row=0, column=3, sticky="e", padx=(10, 0))
+        self.add_document_button.grid(row=0, column=4, sticky="e", padx=(10, 0))
+        self.documents_table.grid(
+            row=1, column=0, sticky="nsew", padx=10, pady=10, columnspan=2
+        )
+
+    def populate_documents_table(self, documents=None):
+        self.documents_table.delete(*self.documents_table.get_children())
+
+        if documents is None:
+            db = Database()
+            documents = db.get_document_requests_by_status("pending")
+
+        for document in documents:
+            self.documents_table.insert(
+                "",
+                "end",
+                values=(
+                    document["id"],
+                    document["student_id"],
+                    document["mode"],
+                    document["document_type"]["type"],
+                    document["request_amount"],
+                    document["purpose"],
+                    document["total"],
+                    document["receipt_no"],
+                    document["payment_date"],
+                    document["request_date"],
+                    document["receive_date"],
+                    document["request_statuses"]["status"],
+                ),
+            )
+
+        # Set alternating row colors
+        self.documents_table.tag_configure("oddrow", background="#252525")
+        self.documents_table.tag_configure("evenrow", background="#353535")
+        # Apply alternating colors to rows
+        for index, document in enumerate(self.documents_table.get_children()):
+            if index % 2 == 0:
+                self.documents_table.item(document, tags=("evenrow",))
+            else:
+                self.documents_table.item(document, tags=("oddrow",))
+
+    def search(self):
+        request_id = self.search_bar.get()
+
+        if request_id == "":
+            return
+
+        db = Database()
+        document = db.get_document_request(request_id)
+
+        if document is None:
+            messagebox.showwarning(
+                "Record not found", "Request ID not found in the database."
+            )
+            return
+
+        self.populate_documents_table([document])
+
+    def reset_table(self):
+        self.populate_documents_table()
+
+    def status_filter_callback(self, value):
+        db = Database()
+        documents = db.get_document_requests_by_status(value.lower())
+        self.populate_documents_table(documents)
+
+    def mark_as_claimed_cmd(self):
+        # Implement the logic to mark selected documents as claimed
+        pass
+
+    def mark_as_ready_cmd(self):
+        # Implement the logic to mark selected documents as ready
+        pass
+
+    def delete_document_cmd(self):
+        # Implement the logic to delete selected documents
+        pass
+
+    def edit_document_cmd(self):
+        # Implement the logic to edit selected documents
+        pass
+
+    def add_document_cmd(self):
+        # Implement the logic to add a document
+        pass
 
 
 class SMSTab(ctk.CTkFrame):
