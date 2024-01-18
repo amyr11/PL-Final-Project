@@ -282,7 +282,7 @@ class Database:
             .data
         )
 
-    def delete_student_request(self, id: int) -> None:
+    def delete_document_request(self, id: int) -> None:
         """Delete a student request's data from the database.
 
         Args:

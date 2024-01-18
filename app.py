@@ -1134,6 +1134,7 @@ class DocumentsTab(ctk.CTkFrame):
             command=self.status_filter_callback,
         )
         self.status_filter.set(self.status_filter_options[0])
+        self.selected_status = self.status_filter_options[0].lower()
 
         self.buttons_frame = ctk.CTkFrame(self)
         self.mark_as_claimed_button = ctk.CTkButton(
@@ -1195,7 +1196,7 @@ class DocumentsTab(ctk.CTkFrame):
         if documents is None:
             db = Database()
             documents = db.get_document_requests_by_status("pending")
-        
+
         self.documents = documents
 
         for document in documents:
@@ -1254,6 +1255,7 @@ class DocumentsTab(ctk.CTkFrame):
         db = Database()
         documents = db.get_document_requests_by_status(value.lower())
         self.populate_documents_table(documents)
+        self.selected_status = value.lower()
 
     def mark_as_claimed_cmd(self):
         # Implement the logic to mark selected documents as claimed
@@ -1264,8 +1266,33 @@ class DocumentsTab(ctk.CTkFrame):
         pass
 
     def delete_document_cmd(self):
-        # Implement the logic to delete selected documents
-        pass
+        # Delete a document request
+        selected = self.documents_table.selection()
+        if not selected:
+            messagebox.showwarning(
+                "No record selected", "Please select a record to delete."
+            )
+            return
+
+        confirmation = messagebox.askyesno(
+            "Delete Record",
+            "Are you sure you want to delete the selected record(s)?",
+        )
+
+        if confirmation:
+            # Get the index of the selected records
+            indexes = []
+            for document in selected:
+                indexes.append(self.documents_table.index(document))
+
+            # Delete the records from the database
+            db = Database()
+            for index in indexes:
+                db.delete_document_request(self.documents[index]["id"])
+
+            self.populate_documents_table(
+                db.get_document_requests_by_status(self.selected_status)
+            )
 
     def edit_document_cmd(self):
         # Edit a document request
@@ -1275,14 +1302,14 @@ class DocumentsTab(ctk.CTkFrame):
                 "No record selected", "Please select a record to edit."
             )
             return
-        
+
         if len(selected) > 1:
             messagebox.showwarning(
                 "Too many records selected",
                 "Please select only one record to edit.",
             )
             return
-        
+
         # Get the index of the selected record
         index = self.documents_table.index(selected[0])
 
@@ -1315,7 +1342,7 @@ class AddRequestWindow(ctk.CTkToplevel):
         db = Database()
         self.document_types = db.get_document_types()
         self.document_type_options = {}
-        
+
         # Map document type to type id
         for document_type in self.document_types:
             self.document_type_options[document_type["type"]] = document_type["id"]
@@ -1357,10 +1384,14 @@ class AddRequestWindow(ctk.CTkToplevel):
         self.mode_label.grid(row=2, column=0, padx=10, pady=(10, 0), sticky="w")
         self.mode_option.grid(row=3, column=0, padx=10, sticky="ew")
 
-        self.document_type_label.grid(row=4, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.document_type_label.grid(
+            row=4, column=0, padx=10, pady=(10, 0), sticky="w"
+        )
         self.document_type_option.grid(row=5, column=0, padx=10, sticky="ew")
 
-        self.num_of_copies_label.grid(row=6, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.num_of_copies_label.grid(
+            row=6, column=0, padx=10, pady=(10, 0), sticky="w"
+        )
         self.num_of_copies_entry.grid(row=7, column=0, padx=10, sticky="ew")
 
         self.purpose_label.grid(row=8, column=0, padx=10, pady=(10, 0), sticky="w")
@@ -1372,7 +1403,9 @@ class AddRequestWindow(ctk.CTkToplevel):
         self.receipt_no_label.grid(row=12, column=0, padx=10, pady=(10, 0), sticky="w")
         self.receipt_no_entry.grid(row=13, column=0, padx=10, sticky="ew")
 
-        self.payment_date_label.grid(row=14, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.payment_date_label.grid(
+            row=14, column=0, padx=10, pady=(10, 0), sticky="w"
+        )
         self.payment_date_entry.grid(row=15, column=0, padx=10, sticky="ew")
 
         self.submit_button.grid(row=16, column=0, padx=10, pady=(20, 10), sticky="ew")
@@ -1409,7 +1442,7 @@ class AddRequestWindow(ctk.CTkToplevel):
                 "Please enter a valid student number.",
             )
             return
-        
+
         db = Database()
         temp_student = db.get_student(student_number)
         student_exists = temp_student is not None
@@ -1441,7 +1474,7 @@ class AddRequestWindow(ctk.CTkToplevel):
                 "Please enter a valid receipt number.",
             )
             return
-    
+
         # Check payment date format (yyyy-mm-dd)
         try:
             datetime.strptime(payment_date, "%Y-%m-%d")
@@ -1501,7 +1534,7 @@ class EditDocumentWindow(ctk.CTkToplevel):
         db = Database()
         self.document_types = db.get_document_types()
         self.document_type_options = {}
-        
+
         # Map document type to type id
         for document_type in self.document_types:
             self.document_type_options[document_type["type"]] = document_type["id"]
@@ -1557,10 +1590,14 @@ class EditDocumentWindow(ctk.CTkToplevel):
         self.mode_label.grid(row=2, column=0, padx=10, pady=(10, 0), sticky="w")
         self.mode_option.grid(row=3, column=0, padx=10, sticky="ew")
 
-        self.document_type_label.grid(row=4, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.document_type_label.grid(
+            row=4, column=0, padx=10, pady=(10, 0), sticky="w"
+        )
         self.document_type_option.grid(row=5, column=0, padx=10, sticky="ew")
 
-        self.num_of_copies_label.grid(row=6, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.num_of_copies_label.grid(
+            row=6, column=0, padx=10, pady=(10, 0), sticky="w"
+        )
         self.num_of_copies_entry.grid(row=7, column=0, padx=10, sticky="ew")
 
         self.purpose_label.grid(row=8, column=0, padx=10, pady=(10, 0), sticky="w")
@@ -1572,13 +1609,19 @@ class EditDocumentWindow(ctk.CTkToplevel):
         self.receipt_no_label.grid(row=12, column=0, padx=10, pady=(10, 0), sticky="w")
         self.receipt_no_entry.grid(row=13, column=0, padx=10, sticky="ew")
 
-        self.payment_date_label.grid(row=14, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.payment_date_label.grid(
+            row=14, column=0, padx=10, pady=(10, 0), sticky="w"
+        )
         self.payment_date_entry.grid(row=15, column=0, padx=10, sticky="ew")
 
-        self.request_date_label.grid(row=16, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.request_date_label.grid(
+            row=16, column=0, padx=10, pady=(10, 0), sticky="w"
+        )
         self.request_date_entry.grid(row=17, column=0, padx=10, sticky="ew")
 
-        self.receive_date_label.grid(row=18, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.receive_date_label.grid(
+            row=18, column=0, padx=10, pady=(10, 0), sticky="w"
+        )
         self.receive_date_entry.grid(row=19, column=0, padx=10, sticky="ew")
 
         self.submit_button.grid(row=20, column=0, padx=10, pady=(20, 10), sticky="ew")
@@ -1618,7 +1661,7 @@ class EditDocumentWindow(ctk.CTkToplevel):
                 "Please enter a valid student number.",
             )
             return
-        
+
         db = Database()
         temp_student = db.get_student(student_number)
         student_exists = temp_student is not None
@@ -1650,7 +1693,7 @@ class EditDocumentWindow(ctk.CTkToplevel):
                 "Please enter a valid receipt number.",
             )
             return
-    
+
         # Check payment date format (yyyy-mm-dd)
         try:
             datetime.strptime(payment_date, "%Y-%m-%d")
@@ -1670,7 +1713,7 @@ class EditDocumentWindow(ctk.CTkToplevel):
                 "Please enter a valid request date (yyyy-mm-dd).",
             )
             return
-        
+
         # Check receive date format (yyyy-mm-dd)
         if receive_date != "":
             try:
@@ -1701,6 +1744,7 @@ class EditDocumentWindow(ctk.CTkToplevel):
 
         self.master.populate_documents_table()
         self.destroy()
+
 
 class SMSTab(ctk.CTkFrame):
     def __init__(self, parent):
