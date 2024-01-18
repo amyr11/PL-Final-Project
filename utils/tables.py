@@ -86,6 +86,7 @@ class StudentRequest(TypedDict):
     student_request_status_id: int
     created_at: str
     updated_at: str
+    messaged:bool
 
 
 valid_tables = [

@@ -14,6 +14,14 @@ class Database:
         self.key = key
         self.client: Client = create_client(url, key)
 
+    def get_document_types(self) -> list:
+        """Get all document types from the database.
+
+        Returns:
+            list: A list of document types.
+        """
+        return self.client.table("document_type").select("*").execute().data
+
     def get_student(self, student_id: str) -> Student:
         """Get a student's data from the database.
 
@@ -299,7 +307,7 @@ class Database:
         data["updated_at"] = str(datetime.fromtimestamp(now))
         self.client.table("student_requests").update(data).eq("id", id).execute()
 
-    def insert_student_request(self, data: StudentRequest) -> StudentRequest:
+    def insert_document_request(self, data: StudentRequest) -> StudentRequest:
         """Insert a student request's data into the database.
 
         Args:
