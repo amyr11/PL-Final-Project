@@ -1122,7 +1122,7 @@ class DocumentsTab(ctk.CTkFrame):
         self.reset_button = ctk.CTkButton(
             self.search_frame,
             text="Reset",
-            command=self.reset_table,
+            command=self.reset,
             fg_color="grey",
             width=20,
         )
@@ -1243,8 +1243,9 @@ class DocumentsTab(ctk.CTkFrame):
 
         self.populate_documents_table([document])
 
-    def reset_table(self):
+    def reset(self):
         self.populate_documents_table()
+        self.search_bar.delete(0, "end")
 
     def status_filter_callback(self, value):
         db = Database()
