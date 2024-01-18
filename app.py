@@ -1,3 +1,4 @@
+import select
 import tkinter.messagebox as messagebox
 from utils.database import Database
 import customtkinter as ctk
@@ -1194,6 +1195,8 @@ class DocumentsTab(ctk.CTkFrame):
         if documents is None:
             db = Database()
             documents = db.get_document_requests_by_status("pending")
+        
+        self.documents = documents
 
         for document in documents:
             self.documents_table.insert(
@@ -1245,6 +1248,7 @@ class DocumentsTab(ctk.CTkFrame):
     def reset(self):
         self.populate_documents_table()
         self.search_bar.delete(0, "end")
+        self.documents = None
 
     def status_filter_callback(self, value):
         db = Database()
@@ -1264,11 +1268,29 @@ class DocumentsTab(ctk.CTkFrame):
         pass
 
     def edit_document_cmd(self):
-        # Implement the logic to edit selected documents
-        pass
+        # Edit a document request
+        selected = self.documents_table.selection()
+        if not selected:
+            messagebox.showwarning(
+                "No record selected", "Please select a record to edit."
+            )
+            return
+        
+        if len(selected) > 1:
+            messagebox.showwarning(
+                "Too many records selected",
+                "Please select only one record to edit.",
+            )
+            return
+        
+        # Get the index of the selected record
+        index = self.documents_table.index(selected[0])
+
+        edit_document_window = EditDocumentWindow(self, self.documents[index])
+        edit_document_window.grab_set()
 
     def add_document_cmd(self):
-        # Add a document
+        # Add a document request
         add_request_window = AddRequestWindow(self)
         add_request_window.grab_set()
 
@@ -1455,6 +1477,230 @@ class AddRequestWindow(ctk.CTkToplevel):
         self.master.populate_documents_table()
         self.destroy()
 
+
+class EditDocumentWindow(ctk.CTkToplevel):
+    def __init__(self, master, document):
+        super().__init__(master)
+        self.title("Edit Document Request")
+        self.grid_columnconfigure(0, weight=1)
+
+        self.document = document
+
+        self.student_number_label = ctk.CTkLabel(self, text="Student Number")
+        self.student_number_entry = ctk.CTkEntry(self)
+        self.student_number_entry.insert(0, document["student_id"])
+
+        self.mode_label = ctk.CTkLabel(self, text="Mode")
+        self.mode_option_label = ctk.StringVar(value=document["mode"])
+        self.mode_option = ctk.CTkOptionMenu(
+            self,
+            values=["Walk-in", "Online"],
+            variable=self.mode_option_label,
+        )
+
+        db = Database()
+        self.document_types = db.get_document_types()
+        self.document_type_options = {}
+        
+        # Map document type to type id
+        for document_type in self.document_types:
+            self.document_type_options[document_type["type"]] = document_type["id"]
+
+        document_type_option_list = list(self.document_type_options.keys())
+
+        self.document_type_label = ctk.CTkLabel(self, text="Document Type")
+        self.document_type_option = ctk.CTkOptionMenu(
+            self,
+            values=document_type_option_list,
+        )
+
+        # set default value
+        self.document_type_option.set(document_type_option_list[0])
+
+        self.num_of_copies_label = ctk.CTkLabel(self, text="Number of Copies")
+        self.num_of_copies_entry = ctk.CTkEntry(self)
+        self.num_of_copies_entry.insert(0, document["request_amount"])
+
+        self.purpose_label = ctk.CTkLabel(self, text="Purpose")
+        self.purpose_entry = ctk.CTkEntry(self)
+        self.purpose_entry.insert(0, document["purpose"])
+
+        self.amount_paid_label = ctk.CTkLabel(self, text="Amount Paid")
+        self.amount_paid_entry = ctk.CTkEntry(self)
+        self.amount_paid_entry.insert(0, document["total"])
+
+        self.receipt_no_label = ctk.CTkLabel(self, text="Receipt No.")
+        self.receipt_no_entry = ctk.CTkEntry(self)
+        self.receipt_no_entry.insert(0, document["receipt_no"])
+
+        self.payment_date_label = ctk.CTkLabel(self, text="Payment Date")
+        self.payment_date_entry = ctk.CTkEntry(self)
+        self.payment_date_entry.insert(0, document["payment_date"])
+
+        self.request_date_label = ctk.CTkLabel(self, text="Request Date")
+        self.request_date_entry = ctk.CTkEntry(self)
+        self.request_date_entry.insert(0, document["request_date"])
+
+        self.receive_date_label = ctk.CTkLabel(self, text="Receive Date")
+        self.receive_date_entry = ctk.CTkEntry(self)
+        if document["receive_date"] is not None:
+            self.receive_date_entry.insert(0, document["receive_date"])
+
+        self.submit_button = ctk.CTkButton(self, text="Submit", command=self.submit)
+
+        # Grid
+        self.student_number_label.grid(
+            row=0, column=0, padx=10, pady=(10, 0), sticky="w"
+        )
+        self.student_number_entry.grid(row=1, column=0, padx=10, sticky="ew")
+
+        self.mode_label.grid(row=2, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.mode_option.grid(row=3, column=0, padx=10, sticky="ew")
+
+        self.document_type_label.grid(row=4, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.document_type_option.grid(row=5, column=0, padx=10, sticky="ew")
+
+        self.num_of_copies_label.grid(row=6, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.num_of_copies_entry.grid(row=7, column=0, padx=10, sticky="ew")
+
+        self.purpose_label.grid(row=8, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.purpose_entry.grid(row=9, column=0, padx=10, sticky="ew")
+
+        self.amount_paid_label.grid(row=10, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.amount_paid_entry.grid(row=11, column=0, padx=10, sticky="ew")
+
+        self.receipt_no_label.grid(row=12, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.receipt_no_entry.grid(row=13, column=0, padx=10, sticky="ew")
+
+        self.payment_date_label.grid(row=14, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.payment_date_entry.grid(row=15, column=0, padx=10, sticky="ew")
+
+        self.request_date_label.grid(row=16, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.request_date_entry.grid(row=17, column=0, padx=10, sticky="ew")
+
+        self.receive_date_label.grid(row=18, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.receive_date_entry.grid(row=19, column=0, padx=10, sticky="ew")
+
+        self.submit_button.grid(row=20, column=0, padx=10, pady=(20, 10), sticky="ew")
+
+    def submit(self):
+        student_number = self.student_number_entry.get()
+        mode = self.mode_option_label.get()
+        document_type = self.document_type_option.get()
+        num_of_copies = self.num_of_copies_entry.get()
+        purpose = self.purpose_entry.get()
+        amount_paid = self.amount_paid_entry.get()
+        receipt_no = self.receipt_no_entry.get()
+        payment_date = self.payment_date_entry.get()
+        request_date = self.request_date_entry.get()
+        receive_date = self.receive_date_entry.get()
+
+        # Validate the data
+        if not (
+            student_number
+            and mode
+            and document_type
+            and num_of_copies
+            and purpose
+            and amount_paid
+            and receipt_no
+            and payment_date
+            and request_date
+        ):
+            messagebox.showwarning(
+                "Missing Fields", "Please fill out all fields before submitting."
+            )
+            return
+
+        if not student_number.isdigit() and len(student_number) != 9:
+            messagebox.showwarning(
+                "Invalid Student Number",
+                "Please enter a valid student number.",
+            )
+            return
+        
+        db = Database()
+        temp_student = db.get_student(student_number)
+        student_exists = temp_student is not None
+
+        if not student_exists:
+            messagebox.showwarning(
+                "Student not found",
+                "Student number not found in the database.",
+            )
+            return
+
+        if not num_of_copies.isdigit():
+            messagebox.showwarning(
+                "Invalid Number of Copies",
+                "Please enter a valid number of copies.",
+            )
+            return
+
+        if not amount_paid.isdigit():
+            messagebox.showwarning(
+                "Invalid Amount Paid",
+                "Please enter a valid amount paid.",
+            )
+            return
+
+        if not receipt_no.isdigit():
+            messagebox.showwarning(
+                "Invalid Receipt Number",
+                "Please enter a valid receipt number.",
+            )
+            return
+    
+        # Check payment date format (yyyy-mm-dd)
+        try:
+            datetime.strptime(payment_date, "%Y-%m-%d")
+        except ValueError:
+            messagebox.showwarning(
+                "Invalid Payment Date",
+                "Please enter a valid payment date (yyyy-mm-dd).",
+            )
+            return
+
+        # Check request date format (yyyy-mm-dd)
+        try:
+            datetime.strptime(request_date, "%Y-%m-%d")
+        except ValueError:
+            messagebox.showwarning(
+                "Invalid Request Date",
+                "Please enter a valid request date (yyyy-mm-dd).",
+            )
+            return
+        
+        # Check receive date format (yyyy-mm-dd)
+        if receive_date != "":
+            try:
+                datetime.strptime(receive_date, "%Y-%m-%d")
+            except ValueError:
+                messagebox.showwarning(
+                    "Invalid Receive Date",
+                    "Please enter a valid receive date (yyyy-mm-dd).",
+                )
+                return
+
+        db = Database()
+        db.update_document_request(
+            self.document["id"],
+            {
+                "student_id": student_number,
+                "mode": mode,
+                "document_type_id": self.document_type_options[document_type],
+                "request_amount": num_of_copies,
+                "purpose": purpose,
+                "total": amount_paid,
+                "receipt_no": receipt_no,
+                "payment_date": payment_date,
+                "request_date": request_date,
+                "receive_date": receive_date if receive_date != "" else None,
+            },
+        )
+
+        self.master.populate_documents_table()
+        self.destroy()
 
 class SMSTab(ctk.CTkFrame):
     def __init__(self, parent):

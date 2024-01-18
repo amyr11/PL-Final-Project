@@ -293,7 +293,7 @@ class Database:
         """
         self.client.table("student_requests").delete().eq("id", id).execute()
 
-    def update_student_request(self, id: int, data: StudentRequest) -> StudentRequest:
+    def update_document_request(self, id: int, data: StudentRequest) -> StudentRequest:
         now = datetime.now().timestamp()
         """Update a student request's data in the database.
         
