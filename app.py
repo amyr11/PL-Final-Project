@@ -81,7 +81,7 @@ class MainWindow(ctk.CTkToplevel):
     def __init__(self, master):
         super().__init__(master)
         self.title("Office of the University Registrar Inquiry System")
-        self.geometry("1070x640")
+        self.geometry("1120x640")
         self.grid_columnconfigure(0, weight=1)
 
         self.tabview = ctk.CTkTabview(self)
@@ -1142,13 +1142,21 @@ class DocumentsTab(ctk.CTkFrame):
             text="Mark as Claimed",
             command=self.mark_as_claimed_cmd,
             width=20,
-            fg_color="grey",
-            hover_color="darkgrey",
+            fg_color="green",
+            hover_color="darkgreen",
         )
         self.mark_as_ready_button = ctk.CTkButton(
             self.buttons_frame,
             text="Mark as Ready",
             command=self.mark_as_ready_cmd,
+            width=20,
+            fg_color="grey",
+            hover_color="darkgrey",
+        )
+        self.mark_as_pending_button = ctk.CTkButton(
+            self.buttons_frame,
+            text="Mark as Pending",
+            command=self.mark_as_pending_cmd,
             width=20,
             fg_color="grey",
             hover_color="darkgrey",
@@ -1183,9 +1191,10 @@ class DocumentsTab(ctk.CTkFrame):
         self.status_filter.grid(row=0, column=3, sticky="w", padx=(10, 0))
         self.mark_as_claimed_button.grid(row=0, column=0, sticky="e", padx=(10, 0))
         self.mark_as_ready_button.grid(row=0, column=1, sticky="e", padx=(10, 0))
-        self.delete_document_button.grid(row=0, column=2, sticky="e", padx=(10, 0))
-        self.edit_document_button.grid(row=0, column=3, sticky="e", padx=(10, 0))
-        self.add_document_button.grid(row=0, column=4, sticky="e", padx=(10, 0))
+        self.mark_as_pending_button.grid(row=0, column=2, sticky="e", padx=(10, 0))
+        self.delete_document_button.grid(row=0, column=3, sticky="e", padx=(10, 0))
+        self.edit_document_button.grid(row=0, column=4, sticky="e", padx=(10, 0))
+        self.add_document_button.grid(row=0, column=5, sticky="e", padx=(10, 0))
         self.documents_table.grid(
             row=1, column=0, sticky="nsew", padx=10, pady=10, columnspan=2
         )
@@ -1258,12 +1267,82 @@ class DocumentsTab(ctk.CTkFrame):
         self.selected_status = value.lower()
 
     def mark_as_claimed_cmd(self):
-        # Implement the logic to mark selected documents as claimed
-        pass
+        db = Database()
+        selected = self.documents_table.selection()
+        if not selected:
+            messagebox.showwarning(
+                "No record selected", "Please select a record to mark as claimed."
+            )
+            return
+
+        indexes = []
+        for document in selected:
+            indexes.append(self.documents_table.index(document))
+
+        for index in indexes:
+            db.update_document_request(
+                self.documents[index]["id"],
+                {
+                    "student_request_status_id": 3,
+                    "receive_date": datetime.now().strftime("%Y-%m-%d"),
+                },
+            )
+
+        self.populate_documents_table(
+            db.get_document_requests_by_status(self.selected_status)
+        )
 
     def mark_as_ready_cmd(self):
-        # Implement the logic to mark selected documents as ready
-        pass
+        db = Database()
+        selected = self.documents_table.selection()
+        if not selected:
+            messagebox.showwarning(
+                "No record selected", "Please select a record to mark as ready."
+            )
+            return
+
+        indexes = []
+        for document in selected:
+            indexes.append(self.documents_table.index(document))
+
+        for index in indexes:
+            db.update_document_request(
+                self.documents[index]["id"],
+                {
+                    "student_request_status_id": 2,
+                    "receive_date": None,
+                },
+            )
+
+        self.populate_documents_table(
+            db.get_document_requests_by_status(self.selected_status)
+        )
+
+    def mark_as_pending_cmd(self):
+        db = Database()
+        selected = self.documents_table.selection()
+        if not selected:
+            messagebox.showwarning(
+                "No record selected", "Please select a record to mark as pending."
+            )
+            return
+
+        indexes = []
+        for document in selected:
+            indexes.append(self.documents_table.index(document))
+
+        for index in indexes:
+            db.update_document_request(
+                self.documents[index]["id"],
+                {
+                    "student_request_status_id": 1,
+                    "receive_date": None,
+                },
+            )
+
+        self.populate_documents_table(
+            db.get_document_requests_by_status(self.selected_status)
+        )
 
     def delete_document_cmd(self):
         # Delete a document request
