@@ -1187,7 +1187,7 @@ class DocumentsTab(ctk.CTkFrame):
         )
         self.add_document_button = ctk.CTkButton(
             self.buttons_frame,
-            text="+ Add Document",
+            text="+ Add Record",
             width=20,
             command=self.add_document_cmd,
         )
